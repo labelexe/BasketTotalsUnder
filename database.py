@@ -73,7 +73,7 @@ async def check_league(league):
 
 
 async def create_HTML():
-    bets = await read_query(f"SELECT * FROM bets WHERE result > 0 ORDER BY ID")
+    bets = await read_query(f"SELECT * FROM bets WHERE result > 0 ORDER BY ID", all=True)
 
     color1 = ' bgcolor=dcf8dc style="text-align: center;"'
     color2 = ' bgcolor=dcdcf8 style="text-align: center;"'
@@ -83,7 +83,7 @@ async def create_HTML():
         header += f'<th>{value}</th>'
     header += '\n</thead>\n'
 
-    html = f'<table border="1" class="dataframe">\n<tbody>\n'
+    html = f'<table width="100%" border="1" class="dataframe">\n<tbody>\n'
     html += header
     if bets:
         for bet in bets:
@@ -163,10 +163,11 @@ async def del_match(game_data):
                         f"WHERE match_id = {game_data['I']} and period={game_data['SC']['CP']}")
 
 
-async def finish_match(game_data, period, total):
+async def finish_match(game_data, period, score1, score2):
     await execute_query(f"UPDATE bets "
-                        f"SET result = case when total > {total} then 2 else 1 end, "
-                        f"match_date = datetime('now') "
+                        f"SET result = case when total > {score1+score2} then 2 else 1 end, "
+                        f"match_date = datetime('now'), "
+                        f"total = total || ' [{score1}' || ':' || '{score2}]' "
                         f"WHERE match_id = {game_data['I']} and period={period}")
 
 

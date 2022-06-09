@@ -155,7 +155,7 @@ async def check():
             # четверть закончилась
             score1 = match_data['SC']['PS'][match[5] - 1]["Value"]['S1']
             score2 = match_data['SC']['PS'][match[5] - 1]["Value"]['S2']
-            await finish_match(match_data, match[5], score1 + score2)
+            await finish_match(match_data, match[5], score1, score2)
             if match[6] > score1 + score2:
                 await log_action(f"Выигрыш: {match[4]} {score1}:{score2}")
                 alert = f"{chr(128994) * 3} Ставка сыграла...\n\n"
