@@ -65,7 +65,7 @@ async def exclude_league(league):
 
 
 async def check_league(league):
-    records = await read_query(f"SELECT ID FROM excluded WHERE league = ({int(league)})")
+    records = await read_query(f"SELECT ID FROM excluded WHERE league_id = {int(league)}")
     if records:
         return True
     else:
@@ -101,7 +101,7 @@ async def create_HTML():
 
 async def get_match(match_id, period):
     match = await read_query(f"SELECT * FROM bets "
-                             f"WHERE match_id = {match_id} and period = {period}"
+                             f"WHERE match_id = {match_id} and period = {period} "
                              f"and result < 1")
     return match
 
@@ -112,11 +112,11 @@ async def check_match(match_data):
     period = match_data["SC"]["CP"]
     try:
         score1 = match_data['SC']['PS'][period - 1]["Value"]['S1']
-    except:
+    except Exception as e:
         score1 = 0
     try:
         score2 = match_data['SC']['PS'][period - 1]["Value"]['S2']
-    except:
+    except Exception as e:
         score2 = 0
     game_total = score1 + score2
 
@@ -137,7 +137,7 @@ async def check_match(match_data):
                         continue
             else:
                 continue
-    except:
+    except Exception as e:
         return None, None
 
     if (bktotal - 10) / 2 > game_total:
@@ -169,6 +169,7 @@ async def finish_match(game_data, period, score1, score2):
                         f"match_date = datetime('now'), "
                         f"total = total || ' [{score1}' || ':' || '{score2}]' "
                         f"WHERE match_id = {game_data['I']} and period={period}")
+    return await read_query(f"SELECT * FROM bets WHERE match_id = {game_data['I']} and period = {period}")
 
 
 async def reset_stats():

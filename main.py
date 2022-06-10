@@ -114,7 +114,7 @@ async def check():
         match = await get_match(match_data['I'], period)
 
         if period < 3 and not match and 4.5 < period_time < 5 and game_total > 0:
-            # фиксация матча
+            # проверка матча
             params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
                            'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '250',
                            'partner': '51', 'grMode': '2', 'marketType': '1'}
@@ -122,6 +122,7 @@ async def check():
 
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
+                # фиксация матча
                 await new_match(game_data, bk_total, bk_coeff)
                 alert = f"{chr(128269)} Обнаружен матч...\n\n" \
                         f"{chr(127967)} <b>{game_data['CN']} / {game_data['L']}</b>\n\n" \
@@ -139,6 +140,7 @@ async def check():
 
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
+                # ставка на матч
                 await fix_match(game_data, bk_total, bk_coeff)
                 alert = f"{chr(9989)} Подходящий матч...\n\n" \
                         f"{chr(127967)} <b>{game_data['CN']} / {game_data['L']}</b>\n\n" \
@@ -155,8 +157,8 @@ async def check():
             # четверть закончилась
             score1 = match_data['SC']['PS'][match[5] - 1]["Value"]['S1']
             score2 = match_data['SC']['PS'][match[5] - 1]["Value"]['S2']
-            await finish_match(match_data, match[5], score1, score2)
-            if match[6] > score1 + score2:
+            res = await finish_match(match_data, match[5], score1, score2)
+            if res[8] == 2:
                 await log_action(f"Выигрыш: {match[4]} {score1}:{score2}")
                 alert = f"{chr(128994) * 3} Ставка сыграла...\n\n"
             else:
@@ -189,7 +191,7 @@ async def on_startup(dp):
     await check()
     asyncio.create_task(check_matches())
     os.system('cls')
-    await log_action(f"<Бот @BasketBallScore запущен>")
+    await log_action(f"<Бот @BasketTotalsUnderBot запущен>")
 
 
 if __name__ == '__main__':
