@@ -116,7 +116,7 @@ async def check():
         if period < 3 and not match and 4.5 < period_time < 5 and game_total > 0:
             # проверка матча
             params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
-                           'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '250',
+                           'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '5000',
                            'partner': '51', 'grMode': '2', 'marketType': '1'}
             game_data = (requests.get(get_value('data', 'match_url'), params=params_game).json())["Value"]
 
@@ -134,7 +134,7 @@ async def check():
         elif match and match[8] == -1 and 5 < period_time < 6:
             # повторная проверка
             params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
-                           'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '250',
+                           'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '5000',
                            'partner': '51', 'grMode': '2', 'marketType': '1'}
             game_data = (requests.get(get_value('data', 'match_url'), params=params_game).json())["Value"]
 
@@ -188,7 +188,6 @@ async def check_matches():
 async def on_startup(dp):
     await set_default_commands(dp)
     await db_start()
-    await check()
     asyncio.create_task(check_matches())
     os.system('cls')
     await log_action(f"<Бот @BasketTotalsUnderBot запущен>")

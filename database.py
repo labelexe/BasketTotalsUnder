@@ -1,6 +1,6 @@
 import sqlite3
 
-from config import DB_FILE
+from config import DB_FILE, log_action, get_value
 
 
 async def db_start():
@@ -76,7 +76,7 @@ async def create_HTML():
     bets = await read_query(f"SELECT * FROM bets WHERE result > 0 ORDER BY ID", all=True)
 
     color1 = ' bgcolor=dcf8dc style="text-align: center;"'
-    color2 = ' bgcolor=dcdcf8 style="text-align: center;"'
+    color2 = ' bgcolor=f8dcdc style="text-align: center;"'
     header_style = ' style="text-align: center; color: #ffffff" bgcolor="000000"'
     header = f'<thead>\n<tr{header_style}>\n'
     for value in ['Дата', 'Лига', 'Матч', 'Период', 'Тотал', 'Кф']:
@@ -107,8 +107,8 @@ async def get_match(match_id, period):
 
 
 async def check_match(match_data):
-    bkcoeff = 0
-    bktotal = 0
+    _coef = 0
+    _total = 0
     period = match_data["SC"]["CP"]
     try:
         score1 = match_data['SC']['PS'][period - 1]["Value"]['S1']
@@ -127,10 +127,14 @@ async def check_match(match_data):
                     if odds["G"] == 4:
                         for total_list in odds["E"]:
                             for total in total_list:
-                                if total["T"] == 9:
-                                    if abs(1.7 - total["C"]) < abs(1.7 - bkcoeff):
-                                        bkcoeff = total["C"]
-                                        bktotal = total["P"]
+                                if total["T"] == 10:
+                                    bkcf = total["C"]
+                                    bktl = total["P"]
+                                    if bkcf >= float(get_value('data', 'min_cf')) \
+                                            and bkcf > _coef \
+                                            and (bktl - 10) / 2 > game_total:
+                                        _coef = bkcf
+                                        _total = bktl
                                 else:
                                     continue
                     else:
@@ -138,10 +142,11 @@ async def check_match(match_data):
             else:
                 continue
     except Exception as e:
+        await log_action(f"Ошибка при проверке матча: {e}")
         return None, None
 
-    if (bktotal - 10) / 2 > game_total:
-        return bktotal, bkcoeff
+    if _coef > 0:
+        return _total, _coef
     else:
         return None, None
 
