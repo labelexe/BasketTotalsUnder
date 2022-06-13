@@ -130,9 +130,9 @@ async def check_match(match_data):
                                 if total["T"] == 10:
                                     bkcf = total["C"]
                                     bktl = total["P"]
-                                    if bkcf >= float(get_value('data', 'min_cf')) \
-                                            and bkcf > _coef \
-                                            and (bktl - 10) / 2 > game_total:
+                                    if bkcf >= float(get_value('data', 'min_cf')) and \
+                                            (bkcf < _coef or _coef == 0) and\
+                                            (bktl - 10) / 2 > game_total:
                                         _coef = bkcf
                                         _total = bktl
                                 else:
@@ -142,7 +142,6 @@ async def check_match(match_data):
             else:
                 continue
     except Exception as e:
-        await log_action(f"Ошибка при проверке матча: {e}")
         return None, None
 
     if _coef > 0:
