@@ -122,24 +122,27 @@ async def check_match(match_data):
 
     try:
         for panel in match_data["SG"]:
-            if panel["PN"] == f'{period}-я Четверть':
-                for odds in panel["GE"]:
-                    if odds["G"] == 4:
-                        for total_list in odds["E"]:
-                            for total in total_list:
-                                if total["T"] == 10:
-                                    bkcf = total["C"]
-                                    bktl = total["P"]
-                                    if bkcf >= float(get_value('data', 'min_cf')) and \
-                                            (bkcf < _coef or _coef == 0) and\
-                                            (bktl - 10) / 2 > game_total:
-                                        _coef = bkcf
-                                        _total = bktl
-                                else:
-                                    continue
-                    else:
-                        continue
-            else:
+            try:
+                if panel["PN"] == f'{period}-я Четверть':
+                    for odds in panel["GE"]:
+                        if odds["G"] == 4:
+                            for total_list in odds["E"]:
+                                for total in total_list:
+                                    if total["T"] == 10:
+                                        bkcf = total["C"]
+                                        bktl = total["P"]
+                                        if bkcf >= float(get_value('data', 'min_cf')) and \
+                                                (bkcf < _coef or _coef == 0) and\
+                                                (bktl - 10) / 2 > game_total:
+                                            _coef = bkcf
+                                            _total = bktl
+                                    else:
+                                        continue
+                        else:
+                            continue
+                else:
+                    continue
+            except Exception as e:
                 continue
     except Exception as e:
         return None, None
