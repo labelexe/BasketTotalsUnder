@@ -175,7 +175,11 @@ async def check():
             for user in users:
                 mess_board = await start_kb(admin=str(user[1]) in get_value('data', 'admins'),
                                             league=match_data['LI'])
-                await bot.send_message(chat_id=user[1], text=alert, reply_markup=mess_board)
+                try:
+                    await bot.send_message(chat_id=user[1], text=alert, reply_markup=mess_board)
+                except:
+                    await log_action(f'{user[1]} заблокировал бота')
+
 
 
 async def check_matches():
