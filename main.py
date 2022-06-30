@@ -10,7 +10,7 @@ from aiogram.dispatcher.filters import CommandStart
 from aiogram.types import ParseMode, BotCommand, Message, User, CallbackQuery
 from aiogram.utils import executor
 
-from config import get_value, log_action
+from config import get_value, log_action, set_value
 from database import db_start, get_match, new_match, check_league, add_user, create_HTML, exclude_league, \
     check_match, get_users, fix_match, del_match, finish_match, reset_stats
 
@@ -78,6 +78,12 @@ async def cb_message(call: CallbackQuery):
     await call.message.delete()
 
 
+async def active_sign():
+    with open(f"check_state", "w", encoding='utf-8') as file:
+        file.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
+        # print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Проверка сообщений...')
+
+
 async def set_default_commands(dp):
     await dp.bot.set_my_commands(
         [
@@ -123,7 +129,7 @@ async def check():
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
                 # фиксация матча
-                await new_match(game_data, bk_total, bk_coeff)
+                await new_match(game_data, bk_total, bk_coeff, float(get_value('data', 'current_bank')))
                 alert = f"{chr(128269)} Обнаружен матч...\n\n" \
                         f"{chr(127967)} <b>{game_data['CN']} / {game_data['L']}</b>\n\n" \
                         f"{chr(9977)} {game_data['O1']} - {game_data['O2']}\n\n" \
@@ -152,18 +158,23 @@ async def check():
             else:
                 await del_match(game_data)
         else:
-            match = await get_match(match_data['I'], period-1)
+            match = await get_match(match_data['I'], period - 1)
             if not match: continue
             # четверть закончилась
             score1 = match_data['SC']['PS'][match[5] - 1]["Value"]['S1']
             score2 = match_data['SC']['PS'][match[5] - 1]["Value"]['S2']
-            res = await finish_match(match_data, match[5], score1, score2)
-            if res[8] == 2:
+            total_bet = float(match[6])
+            if total_bet > score1+score2:
+                bet_result = float(match[7]) * float(match[9])
                 await log_action(f"Выигрыш: {match[4]} {score1}:{score2} < {match[6]}")
                 alert = f"{chr(128994) * 3} Ставка сыграла...\n\n"
             else:
+                bet_result = -1 * float(match[9])
                 await log_action(f"Проигрыш: {match[4]} {score1}:{score2} > {match[6]}")
                 alert = f"{chr(128308) * 3} Ставка проиграла...\n\n"
+            new_balance = float(get_value('data', 'current_bank')) + bet_result
+            set_value('data', 'current_bank', new_balance)
+            await finish_match(match_data, match[5], score1, score2, new_balance)
             alert += f"{chr(127967)} <b>{match[3]}</b>\n\n" \
                      f"{chr(9977)} {match[4]}\n\n" \
                      f"{chr(127936)} Завершена {match[5]}-я четверть [{score1}:{score2}]\n\n<pre>" \
@@ -171,19 +182,16 @@ async def check():
                      f"{chr(128201)} Коэфф: {match[7]}</pre>\n"
 
         if alert:
-            users = await get_users()
-            for user in users:
-                mess_board = await start_kb(admin=str(user[1]) in get_value('data', 'admins'),
-                                            league=match_data['LI'])
-                try:
-                    await bot.send_message(chat_id=user[1], text=alert, reply_markup=mess_board)
-                except:
-                    await log_action(f'{user[1]} заблокировал бота')
-
+            CHANNEL = get_value('data', 'channel')
+            mess = await bot.send_message(chat_id=CHANNEL, text=alert)
+            await bot.pin_chat_message(chat_id=CHANNEL, message_id=mess.message_id)
+            await bot.delete_message(chat_id=CHANNEL, message_id=mess.message_id+1)
+            await log_action(f'Сообщение в канал')
 
 
 async def check_matches():
     aioschedule.every(5).seconds.do(check)
+    aioschedule.every(10).seconds.do(active_sign)
     while True:
         await aioschedule.run_pending()
         await asyncio.sleep(1)

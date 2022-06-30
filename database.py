@@ -1,6 +1,6 @@
 import sqlite3
 
-from config import DB_FILE, log_action, get_value
+from config import DB_FILE, log_action, get_value, set_value
 
 
 async def db_start():
@@ -26,7 +26,10 @@ async def db_start():
                 period INTEGER,
                 total TEXT,
                 coef float,
-                result bit)""")
+                result bit,
+                betsize float,
+                balance float
+                )""")
         base.commit()
         print(f"База данных подключена...")
     else:
@@ -153,11 +156,11 @@ async def check_match(match_data):
         return None, None
 
 
-async def new_match(game_data, total, coef):
-    await execute_query(f"INSERT INTO bets (match_id, league, teams, period, total, coef, result) "
+async def new_match(game_data, total, coef, betsize):
+    await execute_query(f"INSERT INTO bets (match_id, league, teams, period, total, coef, result, betsize) "
                         f"VALUES ({game_data['I']}, '{game_data['CN']} / {game_data['L']}', "
                         f"'{game_data['O1']} - {game_data['O2']}', {game_data['SC']['CP']}, "
-                        f"'{total}', '{coef}', -1)")
+                        f"'{total}', '{coef}', -1, {betsize})")
 
 
 async def fix_match(game_data, total, coef):
@@ -170,14 +173,16 @@ async def del_match(game_data):
                         f"WHERE match_id = {game_data['I']} and period={game_data['SC']['CP']}")
 
 
-async def finish_match(game_data, period, score1, score2):
+async def finish_match(game_data, period, score1, score2, balance):
     await execute_query(f"UPDATE bets "
                         f"SET result = case when total > {score1+score2} then 2 else 1 end, "
                         f"match_date = datetime('now'), "
-                        f"total = total || ' [{score1}' || ':' || '{score2}]' "
+                        f"total = total || ' [{score1}' || ':' || '{score2}]',"
+                        f"balance = {balance}, "
                         f"WHERE match_id = {game_data['I']} and period={period}")
     return await read_query(f"SELECT * FROM bets WHERE match_id = {game_data['I']} and period = {period}")
 
 
 async def reset_stats():
     await execute_query(f"DELETE FROM bets")
+    await set_value('data', 'current_bank', get_value('data', 'start_bank'))
