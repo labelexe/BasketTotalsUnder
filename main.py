@@ -129,7 +129,7 @@ async def check():
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
                 # фиксация матча
-                await new_match(game_data, bk_total, bk_coeff, float(get_value('data', 'current_bank')))
+                await new_match(game_data, bk_total, bk_coeff, float(get_value('data', 'current_bank')) * 0.1)
                 alert = f"{chr(128269)} Обнаружен матч...\n\n" \
                         f"{chr(127967)} <b>{game_data['CN']} / {game_data['L']}</b>\n\n" \
                         f"{chr(9977)} {game_data['O1']} - {game_data['O2']}\n\n" \
@@ -184,8 +184,6 @@ async def check():
         if alert:
             CHANNEL = get_value('data', 'channel')
             mess = await bot.send_message(chat_id=CHANNEL, text=alert)
-            await bot.pin_chat_message(chat_id=CHANNEL, message_id=mess.message_id)
-            await bot.delete_message(chat_id=CHANNEL, message_id=mess.message_id+1)
             await log_action(f'Сообщение в канал')
 
 

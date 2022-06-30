@@ -82,7 +82,7 @@ async def create_HTML():
     color2 = ' bgcolor=f8dcdc style="text-align: center;"'
     header_style = ' style="text-align: center; color: #ffffff" bgcolor="000000"'
     header = f'<thead>\n<tr{header_style}>\n'
-    for value in ['Дата', 'Лига', 'Матч', 'Период', 'Тотал', 'Кф']:
+    for value in ['Дата', 'Лига', 'Матч', 'Период', 'Тотал', 'Кф', 'Ставка', 'Баланс']:
         header += f'<th>{value}</th>'
     header += '\n</thead>\n'
 
@@ -97,6 +97,8 @@ async def create_HTML():
                     f'<td{color}>{bet[5]}</td>\n' \
                     f'<td{color}>{bet[6]}</td>\n' \
                     f'<td{color}>{bet[7]}</td>\n' \
+                    f'<td{color}>{bet[9]}</td>\n' \
+                    f'<td{color}>{bet[10]}</td>\n' \
                     f'</tr>\n'
     html += '</tbody>\n</table>'
     return html
@@ -178,11 +180,11 @@ async def finish_match(game_data, period, score1, score2, balance):
                         f"SET result = case when total > {score1+score2} then 2 else 1 end, "
                         f"match_date = datetime('now'), "
                         f"total = total || ' [{score1}' || ':' || '{score2}]',"
-                        f"balance = {balance}, "
+                        f"balance = {balance} "
                         f"WHERE match_id = {game_data['I']} and period={period}")
     return await read_query(f"SELECT * FROM bets WHERE match_id = {game_data['I']} and period = {period}")
 
 
 async def reset_stats():
     await execute_query(f"DELETE FROM bets")
-    await set_value('data', 'current_bank', get_value('data', 'start_bank'))
+    set_value('data', 'current_bank', get_value('data', 'start_bank'))
