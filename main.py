@@ -47,13 +47,14 @@ async def start(message: Message):
 async def stats(message: Message):
     await message.delete()
     user = User.get_current()
-    html = await create_HTML()
-    file = StringIO()
-    file.name = 'Статистика.html'
-    file.write(html)
-    file.seek(0)
-    await message.answer_document(document=file, caption=f'{chr(128202)} Статистика')
-    await log_action('получил статистику', user)
+    if str(user.id) in get_value('data', 'admins'):
+        html = await create_HTML()
+        file = StringIO()
+        file.name = 'Статистика.html'
+        file.write(html)
+        file.seek(0)
+        await message.answer_document(document=file, caption=f'{chr(128202)} Статистика')
+        await log_action('получил статистику', user)
 
 
 @dp.message_handler(commands="reset")
@@ -129,7 +130,7 @@ async def check():
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
                 # фиксация матча
-                await new_match(game_data, bk_total, bk_coeff, float(get_value('data', 'current_bank')) * 0.1)
+                await new_match(game_data, bk_total, bk_coeff, float(get_value('data', 'betsize')))
                 alert = f"{chr(128269)} Обнаружен матч...\n\n" \
                         f"{chr(127967)} <b>{game_data['CN']} / {game_data['L']}</b>\n\n" \
                         f"{chr(9977)} {game_data['O1']} - {game_data['O2']}\n\n" \
@@ -165,11 +166,11 @@ async def check():
             score2 = match_data['SC']['PS'][match[5] - 1]["Value"]['S2']
             total_bet = float(match[6])
             if total_bet > score1+score2:
-                bet_result = float(match[7]) * float(match[9])
+                bet_result = 0.7 * float(get_value('data', 'betsize'))
                 await log_action(f"Выигрыш: {match[4]} {score1}:{score2} < {match[6]}")
                 alert = f"{chr(128994) * 3} Ставка сыграла...\n\n"
             else:
-                bet_result = -1 * float(match[9])
+                bet_result = -1 * float(get_value('data', 'betsize'))
                 await log_action(f"Проигрыш: {match[4]} {score1}:{score2} > {match[6]}")
                 alert = f"{chr(128308) * 3} Ставка проиграла...\n\n"
             new_balance = float(get_value('data', 'current_bank')) + bet_result
