@@ -37,7 +37,7 @@ async def start(message: Message):
     user = User.get_current()
     mess_text = f'Бот предназначен для отслеживания баскетбольных матчей.\n\n' \
                 f'Cвяжитесь с разработчиком, если хотите узнать больше о боте.'
-    mess_board = await start_kb(start=True)
+    mess_board = await start_kb(admin=False)
     await message.answer(text=mess_text, reply_markup=mess_board)
     await add_user(user.id)
     await log_action('запустил бота', user)
@@ -97,7 +97,9 @@ async def set_default_commands(dp):
 
 async def check():
     matches_data = requests.get(get_value('data', 'events_url'), params=params_live).json()
+
     for match_data in matches_data["Value"]:
+        league = None
         alert = None
         exclude = await check_league(match_data['LI'])
         if exclude: continue
@@ -122,10 +124,13 @@ async def check():
 
         if period < 3 and not match and 4.5 < period_time < 5 and game_total > 0:
             # проверка матча
+
             params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
                            'GroupEvents': 'true', 'allEventsGroupSubGames': 'true', 'countevents': '5000',
                            'partner': '51', 'grMode': '2', 'marketType': '1'}
             game_data = (requests.get(get_value('data', 'match_url'), params=params_game).json())["Value"]
+
+            league = (f"{game_data['CN']} / {game_data['L']}", game_data['LI'])
 
             bk_total, bk_coeff = await check_match(game_data)
             if bk_total:
@@ -186,6 +191,15 @@ async def check():
             CHANNEL = get_value('data', 'channel')
             mess = await bot.send_message(chat_id=CHANNEL, text=alert)
             await log_action(f'Сообщение в канал')
+
+            if league:
+                for admin in get_value('data', 'admins').split('|'):
+                    try:
+                        mess_text = f'{league[0]}'
+                        mess_board = await start_kb(admin=True, league=league[1])
+                        await bot.send_message(chat_id=admin, text=mess_text, reply_markup=mess_board)
+                    except:
+                        pass
 
 
 async def check_matches():
