@@ -122,7 +122,7 @@ async def check():
 
         match = await get_match(match_data['I'], period)
 
-        if period < 3 and not match and 4.5 < period_time < 5 and game_total > 0:
+        if period < 4 and not match and 4.5 < period_time < 5 and game_total > 0:
             # проверка матча
 
             params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
