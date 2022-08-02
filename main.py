@@ -12,7 +12,7 @@ from aiogram.utils import executor
 
 from config import get_value, log_action, set_value
 from database import db_start, get_match, new_match, check_league, add_user, create_HTML, exclude_league, \
-    check_match, get_users, fix_match, del_match, finish_match, reset_stats
+    check_match, get_users, fix_match, del_match, finish_match, reset_stats, read_query
 
 from keyboards import start_kb
 
