@@ -150,7 +150,7 @@ async def check():
                            'partner': '51', 'grMode': '2', 'marketType': '1'}
             game_data = (requests.get(get_value('data', 'match_url'), params=params_game).json())["Value"]
 
-            bk_total, bk_coeff = await check_match(game_data)
+            bk_total, bk_coeff = await check_match(game_data, 1)
             if bk_total:
                 # ставка на матч
                 await fix_match(game_data, bk_total, bk_coeff)

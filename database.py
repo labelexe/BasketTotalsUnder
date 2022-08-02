@@ -122,9 +122,10 @@ async def get_match(match_id, period):
     return match
 
 
-async def check_match(match_data):
+async def check_match(match_data, first=None):
     _coef = 0
     _total = 0
+    add = 12 if first else 10
     period = match_data["SC"]["CP"]
     try:
         score1 = match_data['SC']['PS'][period - 1]["Value"]['S1']
@@ -149,7 +150,7 @@ async def check_match(match_data):
                                         bktl = total["P"]
                                         if bkcf >= float(get_value('data', 'min_cf')) and \
                                                 (bkcf < _coef or _coef == 0) and\
-                                                (bktl - 10) / 2 > game_total:
+                                                (bktl - add) / 2 > game_total:
                                             _coef = bkcf
                                             _total = bktl
                                     else:
