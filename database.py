@@ -17,9 +17,9 @@ async def db_start():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 league_id INTEGER NOT NULL UNIQUE)
             ;
-            CREATE TABLE IF NOT EXISTS bets (
+            CREATE TABLE IF NOT EXISTS Bbets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                match_id INTEGER,
+                match_id INTEGER UNIQUE,
                 match_date TEXT,
                 league TEXT,
                 teams TEXT,
@@ -30,7 +30,7 @@ async def db_start():
                 betsize float,
                 balance float)
             ;
-            CREATE TABLE IF NOT EXISTS results (
+            CREATE TABLE IF NOT EXISTS Bresults (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 match_date TEXT,
                 league TEXT,
@@ -40,7 +40,30 @@ async def db_start():
                 coef float,
                 betsize float,
                 balance float)
-            """)
+            ;
+            CREATE TABLE IF NOT EXISTS Hbets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                match_id INTEGER UNIQUE,
+                match_date TEXT,
+                league TEXT,
+                teams TEXT,
+                period INTEGER,
+                total TEXT,
+                coef float,
+                result bit,
+                betsize float,
+                balance float)
+            ;
+            CREATE TABLE IF NOT EXISTS Hresults (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                match_date TEXT,
+                league TEXT,
+                teams TEXT,
+                period INTEGER,
+                total TEXT,
+                coef float,
+                betsize float,
+                balance float)""")
         base.commit()
         print(f"База данных подключена...")
     else:
@@ -86,8 +109,8 @@ async def check_league(league):
         return False
 
 
-async def create_HTML():
-    bets = await read_query(f"SELECT * FROM results ORDER BY ID", all=True)
+async def create_HTML(sport):
+    bets = await read_query(f"SELECT * FROM {'B' if sport == 0 else 'H'}results ORDER BY ID", all=True)
 
     color1 = ' bgcolor=dcf8dc style="text-align: center;"'
     color2 = ' bgcolor=f8dcdc style="text-align: center;"'
@@ -115,14 +138,14 @@ async def create_HTML():
     return html
 
 
-async def get_match(match_id, period):
-    match = await read_query(f"SELECT * FROM bets "
+async def get_match(sport, match_id, period):
+    match = await read_query(f"SELECT * FROM {'B' if sport == 0 else 'H'}bets "
                              f"WHERE match_id = {match_id} and period = {period} "
                              f"and result < 1")
     return match
 
 
-async def check_match(match_data, first=None):
+async def check_match_B(match_data, first=None):
     _coef = 0
     _total = 0
     add = 12 if first else 10
@@ -148,8 +171,8 @@ async def check_match(match_data, first=None):
                                     if total["T"] == 10:
                                         bkcf = total["C"]
                                         bktl = total["P"]
-                                        if bkcf >= float(get_value('data', 'min_cf')) and \
-                                                (bkcf < _coef or _coef == 0) and\
+                                        if bkcf >= float(get_value('data', 'coefB')) and \
+                                                (bkcf < _coef or _coef == 0) and \
                                                 (bktl - add) / 2 > game_total:
                                             _coef = bkcf
                                             _total = bktl
@@ -170,39 +193,69 @@ async def check_match(match_data, first=None):
         return None, None
 
 
-async def new_match(game_data, total, coef, betsize):
-    await execute_query(f"INSERT INTO bets (match_id, league, teams, period, total, coef, result, betsize) "
-                        f"VALUES ({game_data['I']}, '{game_data['CN']} / {game_data['L']}', "
-                        f"'{game_data['O1']} - {game_data['O2']}', {game_data['SC']['CP']}, "
-                        f"'{total}', '{coef}', -1, {betsize})")
+async def check_matchH(match_data):
+    _coef = 0
+    _total = 0
+    try:
+        for odds in match_data["GE"]:
+            if odds["G"] == 4:
+                for total_list in odds["E"]:
+                    for total in total_list:
+                        if total["T"] == 9:
+                            bkcf = total["C"]
+                            bktl = total["P"]
+                            if abs(float(get_value('data', 'coefH')) - bkcf) < abs(_coef - bkcf):
+                                _coef = bkcf
+                                _total = bktl
+                            else:
+                                continue
+                        else:
+                            continue
+            else:
+                continue
+    except Exception as e:
+        return None, None
+
+    if _coef > 0:
+        return _total, _coef
+    else:
+        return None, None
 
 
-async def fix_match(game_data, total, coef):
-    await execute_query(f"UPDATE bets SET result = 0, total = {total}, coef = {coef} "
+async def new_match(sport, game_data, total, coef, betsize):
+    await execute_query(
+        f"INSERT INTO {'B' if sport == 0 else 'H'}bets (match_id, league, teams, period, total, coef, result, betsize) "
+        f"VALUES ({game_data['I']}, '{game_data['CN']} / {game_data['L']}', "
+        f"'{game_data['O1']} - {game_data['O2']}', {game_data['SC']['CP']}, "
+        f"'{total}', '{coef}', -1, {betsize})")
+
+
+async def fix_match(sport, game_data, total, coef):
+    await execute_query(f"UPDATE {'B' if sport == 0 else 'H'}bets SET result = 0, total = {total}, coef = {coef} "
                         f"WHERE match_id = {game_data['I']} and period={game_data['SC']['CP']}")
 
 
-async def del_match(game_data):
-    await execute_query(f"DELETE FROM bets "
+async def del_match(sport, game_data):
+    await execute_query(f"DELETE FROM {'B' if sport == 0 else 'H'}bets "
                         f"WHERE match_id = {game_data['I']} and period={game_data['SC']['CP']}")
 
 
-async def finish_match(game_data, period, score1, score2, balance):
-    await execute_query(f"UPDATE bets "
-                        f"SET result = case when total > {score1+score2} then 2 else 1 end, "
+async def finish_match(sport, game_data, period, score1, score2, balance):
+    await execute_query(f"UPDATE {'B' if sport == 0 else 'H'}bets "
+                        f"SET result = case when total > {score1 + score2} then 2 else 1 end, "
                         f"match_date = datetime('now'), "
                         f"total = total || ' [{score1}' || ':' || '{score2}]',"
                         f"balance = {balance} "
                         f"WHERE match_id = {game_data['I']} and period={period}")
 
-    res = await read_query(f"SELECT * from bets WHERE match_id = {game_data['I']} and period={period}")
+    res = await read_query(f"SELECT * from {'B' if sport == 0 else 'H'}bets "
+                           f"WHERE match_id = {game_data['I']} and period={period}")
 
-    await execute_query(f"INSERT INTO results (match_date, league, teams, period, total, coef, result, betsize, balance)"
+    await execute_query(f"INSERT INTO {'B' if sport == 0 else 'H'}results "
+                        f"(match_date, league, teams, period, total, coef, betsize, balance)"
                         f"VALUES (datetime('now'), '{game_data['CN']} / {game_data['L']}', "
                         f"'{game_data['O1']} - {game_data['O2']}', {period}, "
                         f"'{res[6]}', '{res[7]}', {res[9]}, {balance})")
-
-
 
 
 async def reset_stats():
