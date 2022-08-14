@@ -36,7 +36,7 @@ def set_value(node, param, value):
         with open(CFG_FILE, "w") as config_file:
             settings.write(config_file)
         return True
-    except:
+    except Exception as e:
         return False
 
 

@@ -107,8 +107,8 @@ async def checkB():
                     alert = f"{chr(128308) * 3} Ставка проиграла...\n\n"
                 current_balance = float(get_value('data', 'current_bankB'))
                 new_balance = current_balance + bet_result
-                set_value('data', 'current_bankB', new_balance)
-                await finish_match(0, match_data, match[5], score1, score2, new_balance)
+                set_value('data', 'current_bankB', str(new_balance))
+                await finish_match(0, match_data, match[5], score1, score2, new_balance, bet_result)
                 alert += f"{chr(127967)} <b>{match[3]}</b>\n\n" \
                          f"{chr(9977)} {match[4]}\n\n" \
                          f"{chr(127936)} Завершена {match[5]}-я четверть [{score1}:{score2}]\n\n<pre>" \

@@ -39,7 +39,8 @@ async def db_start():
                 total TEXT,
                 coef float,
                 betsize float,
-                balance float)
+                balance float,
+                result integer)
             ;
             CREATE TABLE IF NOT EXISTS Hbets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +64,8 @@ async def db_start():
                 total TEXT,
                 coef float,
                 betsize float,
-                balance float)""")
+                balance float,
+                result integer)""")
         base.commit()
         print(f"База данных подключена...")
     else:
@@ -124,15 +126,15 @@ async def create_HTML(sport):
     html += header
     if bets:
         for bet in bets:
-            color = color1 if bet[7] == 1 else color2
+            color = color1 if bet[9] == 1 else color2
             html += f'<td{color}>{bet[1]}</td>\n' \
                     f'<td{color}>{bet[2]}</td>\n' \
                     f'<td{color}>{bet[3]}</td>\n' \
                     f'<td{color}>{bet[4]}</td>\n' \
                     f'<td{color}>{bet[5]}</td>\n' \
                     f'<td{color}>{bet[6]}</td>\n' \
+                    f'<td{color}>{bet[7]}</td>\n' \
                     f'<td{color}>{bet[8]}</td>\n' \
-                    f'<td{color}>{bet[9]}</td>\n' \
                     f'</tr>\n'
     html += '</tbody>\n</table>'
     return html
@@ -240,9 +242,9 @@ async def del_match(sport, game_data):
                         f"WHERE match_id = {game_data['I']} and period={game_data['SC']['CP']}")
 
 
-async def finish_match(sport, game_data, period, score1, score2, balance):
+async def finish_match(sport, game_data, period, score1, score2, balance, bet_result):
     await execute_query(f"UPDATE {'B' if sport == 0 else 'H'}bets "
-                        f"SET result = case when total > {score1 + score2} then 2 else 1 end, "
+                        f"SET result = {0 if bet_result<0 else 1}, "
                         f"match_date = datetime('now'), "
                         f"total = total || ' [{score1}' || ':' || '{score2}]',"
                         f"balance = {balance} "
@@ -252,10 +254,10 @@ async def finish_match(sport, game_data, period, score1, score2, balance):
                            f"WHERE match_id = {game_data['I']} and period={period}")
 
     await execute_query(f"INSERT INTO {'B' if sport == 0 else 'H'}results "
-                        f"(match_date, league, teams, period, total, coef, betsize, balance)"
+                        f"(match_date, league, teams, period, total, coef, betsize, balance, result)"
                         f"VALUES (datetime('now'), '{game_data['CN']} / {game_data['L']}', "
                         f"'{game_data['O1']} - {game_data['O2']}', {period}, "
-                        f"'{res[6]}', '{res[7]}', {res[9]}, {balance})")
+                        f"'{res[6]}', '{res[7]}', {res[9]}, {balance}, {0 if bet_result<0 else 1})")
 
 
 async def reset_stats():

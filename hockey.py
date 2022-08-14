@@ -53,9 +53,9 @@ async def checkH():
                     league = (f"{game_data['CN']} / {game_data['L']}", game_data['LI'])
                     await new_match(1, game_data, bk_total, bk_coeff, float(get_value('data', 'betsizeH')))
                     await log_action(f"Анализ: {game_data['O1']} - {game_data['O2']}")
-                    mess_text = f"{chr(127954) * 5}\n\n{league[0]}\n{game_data['O1']} - {game_data['O2']}"
-                    mess_board = await start_kb(admin=True, league=league[1])
-                    return mess_text, mess_board, alert
+                    # mess_text = f"{chr(127954) * 5}\n\n{league[0]}\n{game_data['O1']} - {game_data['O2']}"
+                    # mess_board = await start_kb(admin=True, league=league[1])
+                    return None, None, None  #mess_text, mess_board, alert
             elif match and match_time == 40:
                 # повторная проверка
                 params_game = {'id': match_data['I'], 'lng': 'ru', 'cfview': '0', 'isSubGames': 'true',
@@ -89,9 +89,8 @@ async def checkH():
                     await log_action(f"Проигрыш: {match[4]} {score1}:{score2} > {match[6]}")
                     alert = f"{chr(128308) * 3} Ставка проиграла...\n\n"
                 new_balance = float(get_value('data', 'current_bankH')) + bet_result
-                set_value('data', 'current_bankH', new_balance)
-                await finish_match(match_data, match[5], score1, score2, new_balance)
-                await finish_match(1, match_data, match[5], score1, score2, new_balance)
+                set_value('data', 'current_bankH', str(new_balance))
+                await finish_match(1, match_data, match[5], score1, score2, new_balance, bet_result)
 
                 alert += f"{chr(129349)} <b>{match[3]}</b>\n\n" \
                          f"{chr(9977)} {match[4]}\n\n" \

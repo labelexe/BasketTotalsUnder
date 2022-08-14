@@ -31,7 +31,7 @@ async def start(message: Message):
     await log_action('запустил бота', user)
 
 
-@dp.message_handler(commands="statsB")
+@dp.message_handler(commands="basketball")
 async def stats1(message: Message):
     await message.delete()
     user = User.get_current()
@@ -45,7 +45,7 @@ async def stats1(message: Message):
         await log_action('получил статистику "Баскетбол"', user)
 
 
-@dp.message_handler(commands="statsH")
+@dp.message_handler(commands="hockey")
 async def stats2(message: Message):
     await message.delete()
     user = User.get_current()
@@ -81,7 +81,8 @@ async def active_sign():
 async def set_default_commands(dp):
     await dp.bot.set_my_commands(
         [
-            BotCommand("stats", "Получить статистику"),
+            BotCommand("basketball", 'Статистика "Баскетбол"'),
+            BotCommand("hockey", 'Статистика "Хоккей"'),
             BotCommand("start", "Перезапустить бота"),
         ]
     )
